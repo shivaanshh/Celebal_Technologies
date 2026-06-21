@@ -1,0 +1,60 @@
+Retrieval-Augmented Generation: An Overview
+
+Retrieval-Augmented Generation, commonly abbreviated as RAG, is a technique that combines
+information retrieval with text generation to produce answers grounded in external data.
+Instead of relying purely on the parametric knowledge stored in a language model's weights,
+a RAG system first searches a knowledge base for relevant passages and then feeds those
+passages to the language model as additional context. This grounding reduces hallucination
+and allows the system to answer questions about private, recent, or domain-specific
+information that the underlying model was never trained on.
+
+How RAG Works
+
+A typical RAG pipeline has two main phases: retrieval and generation. In the retrieval phase,
+documents are split into smaller chunks, and each chunk is converted into a numerical vector
+called an embedding. These embeddings capture the semantic meaning of the text. When a user
+asks a question, the question itself is embedded using the same model, and a similarity
+search (often cosine similarity) is performed against the stored chunk embeddings. The
+chunks with the highest similarity scores are considered the most relevant context for
+answering the question.
+
+In the generation phase, the retrieved chunks are inserted into a prompt along with the
+original question, and this combined prompt is sent to a language model. The model then
+generates a natural-language answer using both its own training and the freshly retrieved
+context. Because the context is provided directly in the prompt, the model can cite specific
+facts from the source documents rather than guessing from memory alone.
+
+Why Use a Vector Database
+
+As the number of documents grows, searching through all of them with a naive linear scan
+becomes slow. Vector databases such as FAISS, Pinecone, Weaviate, and Chroma are optimized
+data structures that allow approximate nearest-neighbor search over millions of embeddings
+in milliseconds. They are a core infrastructure component of production RAG systems,
+though for small projects a simple in-memory array with cosine similarity works perfectly
+well.
+
+Common Use Cases
+
+RAG is widely used to build chatbots that can answer questions about internal company
+documentation, customer support knowledge bases, legal contracts, and academic papers.
+It also powers many "chat with your PDF" applications, coding assistants that retrieve
+relevant code snippets, and enterprise search tools that let employees query large
+repositories of unstructured text using natural language.
+
+Limitations and Improvements
+
+RAG systems are only as good as their retrieval step: if the wrong chunks are retrieved,
+the generated answer will be wrong or incomplete even if the language model itself is
+highly capable. Common improvements include better chunking strategies that respect
+sentence and paragraph boundaries, hybrid search that combines keyword matching with
+vector similarity, and re-ranking models that re-score the initially retrieved chunks
+for relevance before they are passed to the generator. Some advanced systems also use
+multiple retrieval rounds or query rewriting to handle complex, multi-part questions.
+
+Conclusion
+
+By combining the precision of search with the fluency of language models, Retrieval-
+Augmented Generation has become one of the most practical techniques for building AI
+systems that need access to accurate, up-to-date, or proprietary information. It is now
+a standard architecture pattern across chatbots, knowledge assistants, and enterprise
+search products.

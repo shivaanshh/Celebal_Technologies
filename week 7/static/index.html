@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAG QA</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="layout">
+
+    <!-- ── Sidebar ─────────────────────────────────────────────────── -->
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="brand">
+          <div class="brand-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <span class="brand-name">RAG QA</span>
+        </div>
+      </div>
+
+      <div class="sidebar-body">
+
+        <!-- Documents -->
+        <section class="s-section">
+          <p class="s-label">Documents</p>
+          <div class="drop-zone" id="dropZone">
+            <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p class="dz-main">Drop files here</p>
+            <p class="dz-sub">or <button class="link-btn" id="browseBtn">browse</button></p>
+            <p class="dz-types">PDF · TXT · MD</p>
+            <input type="file" id="fileInput" multiple accept=".pdf,.txt,.md" style="display:none">
+          </div>
+          <div class="file-list" id="fileList"></div>
+        </section>
+
+        <!-- Settings -->
+        <section class="s-section">
+          <p class="s-label">Settings</p>
+
+          <div class="field">
+            <label class="field-label">Backend</label>
+            <select class="sel" id="backendSelect">
+              <option value="auto">Auto-detect</option>
+              <option value="groq" selected>Groq</option>
+              <option value="ollama">Ollama (local)</option>
+              <option value="anthropic">Anthropic</option>
+              <option value="openai">OpenAI</option>
+              <option value="local">Local (no LLM)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Model</label>
+            <select class="sel" id="modelSelect">
+              <option value="">Default</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Top-K chunks <span class="field-hint" id="topKLabel">5</span></label>
+            <input class="range-input" type="range" id="topKInput" min="1" max="15" value="5">
+          </div>
+        </section>
+
+        <!-- Process button -->
+        <button class="btn btn-primary" id="processBtn" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 16 12 12 8 16"/>
+            <line x1="12" y1="12" x2="12" y2="21"/>
+            <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+          </svg>
+          <span>Process Documents</span>
+        </button>
+        <p class="stage-text" id="stageText" style="display:none"></p>
+
+        <!-- Active document index log -->
+        <section class="s-section" id="activeSection" style="display:none">
+          <div class="active-hdr">
+            <p class="s-label">Active Index</p>
+            <span class="index-badge" id="indexBadge"></span>
+          </div>
+          <div class="doc-log" id="docLog"></div>
+          <div class="doc-summary" id="docSummary"></div>
+        </section>
+
+      </div><!-- /sidebar-body -->
+
+      <div class="sidebar-foot">
+        <button class="btn btn-ghost" id="resetBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 .49-3.8"/>
+          </svg>
+          <span>Reset</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ── Chat ─────────────────────────────────────────────────────── -->
+    <main class="chat">
+
+      <header class="chat-hdr">
+        <h1 class="chat-title">Document Q&amp;A</h1>
+        <div class="hdr-status" id="hdrStatus">
+          <span class="dot dot-gray" id="hdrDot"></span>
+          <span id="hdrText">No documents loaded</span>
+        </div>
+      </header>
+
+      <div class="messages" id="messages">
+        <div class="welcome" id="welcome">
+          <div class="wl-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
+          <h2 class="wl-title">Ask anything about your documents</h2>
+          <p class="wl-sub">Upload files on the left, hit <strong>Process Documents</strong>, then ask questions here. The system retrieves the most relevant passages and generates a grounded answer.</p>
+          <div class="chips" id="chips">
+            <button class="chip" data-q="What is the main idea of this document?">Main idea</button>
+            <button class="chip" data-q="Summarize the key points.">Key points</button>
+            <button class="chip" data-q="What are the most important conclusions?">Conclusions</button>
+            <button class="chip" data-q="What limitations or challenges are mentioned?">Limitations</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-bar">
+        <div class="input-wrap" id="inputWrap">
+          <textarea
+            class="q-input"
+            id="questionInput"
+            placeholder="Ask a question about your documents…"
+            rows="1"
+            disabled
+          ></textarea>
+          <button class="send-btn" id="sendBtn" disabled aria-label="Send">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+        <p class="input-hint">Enter to send &nbsp;·&nbsp; Shift+Enter for new line</p>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
